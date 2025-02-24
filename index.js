@@ -7,8 +7,9 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.he4nr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://waliurrafiqsami:m7EBXm7bxxSLxpgI@cluster0.he4nr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -21,7 +22,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    await client.db("admin").command({ ping: 1 });
     const artAndCraftCollection = client
       .db("insertDB")
       .collection("artAndCraftCollectionData");
@@ -29,9 +30,14 @@ async function run() {
     //   artAndCraftCollection section starts
 
     app.get("/artAndCraft", async (req, res) => {
-      const data = artAndCraftCollection.find();
-      const results = await data.toArray();
-      res.send(results);
+      try {
+        const results = await artAndCraftCollection.find({}).toArray();
+        res.status(200).json(results);
+      } catch (error) {
+        res
+          .status(500)
+          .json({ error: "Internal Server Error", details: error });
+      }
     });
 
     app.get("/update/:id", async (req, res) => {
@@ -156,6 +162,15 @@ run().catch(console.dir);
 
 app.get("/", (req, res) => {
   res.send("Hello World");
+});
+const arr = [
+  {
+    sami: "amfsfsfi",
+  },
+];
+
+app.get("/sami", (req, res) => {
+  res.send(arr);
 });
 
 app.listen(port, () => {
