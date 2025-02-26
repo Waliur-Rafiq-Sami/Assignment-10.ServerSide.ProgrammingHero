@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const uri = `mongodb+srv://waliurrafiqsami:m7EBXm7bxxSLxpgI@cluster0.he4nr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.he4nr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -21,23 +21,24 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.db("admin").command({ ping: 1 });
     const artAndCraftCollection = client
       .db("insertDB")
       .collection("artAndCraftCollectionData");
 
-    //   artAndCraftCollection section starts
-
     app.get("/artAndCraft", async (req, res) => {
-      try {
-        const results = await artAndCraftCollection.find({}).toArray();
-        res.status(200).json(results);
-      } catch (error) {
-        res
-          .status(500)
-          .json({ error: "Internal Server Error", details: error });
-      }
+      const results = await artAndCraftCollection.find().toArray();
+      res.send(results);
+    });
+
+    app.get("/artAndCraft/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+
+      const results = await artAndCraftCollection
+        .find({ category: id })
+        .toArray();
+      res.send(results);
     });
 
     app.get("/update/:id", async (req, res) => {
@@ -123,7 +124,7 @@ async function run() {
     });
 
     app.delete("/viewItem", async (req, res) => {
-      const { e, id } = req.body; // e = email, id = item ID to delete
+      const { e, id } = req.body;
 
       if (!e || !id) {
         return res
@@ -131,22 +132,14 @@ async function run() {
           .send({ error: "Email and item ID are required" });
       }
 
-      try {
-        const filter = { email: e };
-        const update = { $pull: { data: { _id: id } } };
-        const result = await userCollection.updateOne(filter, update);
+      const filter = { email: e };
+      const update = { $pull: { data: { _id: id } } };
+      const result = await userCollection.updateOne(filter, update);
 
-        if (result.modifiedCount > 0) {
-          res.send({ success: true, message: "Item deleted successfully" });
-        } else {
-          res.status(404).send({ error: "Item not found or already deleted" });
-        }
-      } catch (error) {
-        res.status(500).send({ error: "Internal Server Error" });
+      if (result.modifiedCount > 0) {
+        res.send({ success: true, message: "Item deleted successfully" });
       }
     });
-
-    //   userCollection section end
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
@@ -162,15 +155,6 @@ run().catch(console.dir);
 
 app.get("/", (req, res) => {
   res.send("Hello World");
-});
-const arr = [
-  {
-    sami: "amfsfsfi",
-  },
-];
-
-app.get("/sami", (req, res) => {
-  res.send(arr);
 });
 
 app.listen(port, () => {
